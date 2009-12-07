@@ -58,4 +58,6 @@ class ApplicationController
   acts_as_other_website :using => EySession
 end
 
+See blog post at: http://flouri.sh/2009/12/7/introducing-mechanized_session-and-acts_as_other_website
+
 Copyright (c) 2009 David Stevenson, released under the MIT license
