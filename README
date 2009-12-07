@@ -1,13 +1,61 @@
 ActsAsOtherWebsite
 ==================
 
-Introduction goes here.
+This rails plugin provides allows you to easily use MechanizedSession in your rails application.  The typical use is when
+you want to build a mobile version of an existing site without a good API.  MechanizedSession attempts to connect a rails
+session with this website to another session at a remote website, and allows you execute actions you define once logged in.
+
+The plugin handles all the standard exceptions that MechanizedSession might throw, and redirects to the login page to
+re-establish the session before continuing.  It also provides a simple login page.
+
+Installation
+============
+
+* install 'mechanized_session' gem
+
+./script/plugin install git://github.com/dsboulder/acts_as_other_website.git
 
 
 Example
 =======
 
-Example goes here.
+To use this plugin, you'll need to do 2 additional things besides installation:
+
+1.  Create a subclass of MechanizedSession with a :login action and any other actions you'd like.
+2.  Declare 'acts_as_other_website' in your ApplicationController, passing this option
+      :using => YourSubclass
+
+Example subclass:
+
+class EySession < MechanizedSession
+  action :login do |session, options|
+    session.get("https://login.engineyard.com/login") do |page|
+      next_page = page.form_with(:action =>"/login") do |form|
+        form["email"] = options[:username]
+        form["password"] = options[:password]
+        session.logger.debug "Submitting /login form"
+      end.click_button
+      session.logger.debug "Ended up on page #{next_page.uri}"
+    end
+    true  # tells MechanizedSession that login was successful.  EY returns a 401 exception if not successful
+  end
+
+  action :list_environments do |session|
+    envs = []
+    session.get("https://cloud.engineyard.com/dashboard") do |page|
+      page.parser.css("div.environment").each do |env|
+        envs << env.css('h3').first["title"]
+      end
+    end
+    envs
+  end
+end
 
 
-Copyright (c) 2009 [name of plugin creator], released under the MIT license
+Example invocation:
+
+class ApplicationController
+  acts_as_other_website :using => EySession
+end
+
+Copyright (c) 2009 David Stevenson, released under the MIT license
